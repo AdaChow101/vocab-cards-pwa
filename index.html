@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>词卡 · 拼写背单词</title>
+<meta name="description" content="三级分级背单词：看中文释义、听英文发音、用键盘拼出单词">
+<meta name="theme-color" content="#1c2333">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="词卡">
+<style>
+  :root {
+    --ink: #1c2333;
+    --paper: #eceee8;
+    --surface: #ffffff;
+    --line: rgba(28,35,51,0.13);
+    --line-strong: rgba(28,35,51,0.22);
+    --text: var(--ink);
+    --text-muted: rgba(28,35,51,0.58);
+    --text-faint: rgba(28,35,51,0.38);
+    --coral: #d9522f;
+    --coral-soft: rgba(217,82,47,0.12);
+    --teal: #257a68;
+    --teal-soft: rgba(37,122,104,0.13);
+    --amber: #b9812c;
+    --amber-soft: rgba(185,129,44,0.15);
+    --shadow: 0 1px 2px rgba(28,35,51,0.06), 0 8px 24px -12px rgba(28,35,51,0.18);
+    --radius: 14px;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Songti SC", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #eceee8; --paper: #14171e; --surface: #1c212c;
+      --line: rgba(236,238,232,0.14); --line-strong: rgba(236,238,232,0.24);
+      --text: var(--ink); --text-muted: rgba(236,238,232,0.62); --text-faint: rgba(236,238,232,0.4);
+      --coral: #ff8a68; --coral-soft: rgba(255,138,104,0.14);
+      --teal: #55c2a8; --teal-soft: rgba(85,194,168,0.15);
+      --amber: #e3b45f; --amber-soft: rgba(227,180,95,0.16);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px -12px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #eceee8; --paper: #14171e; --surface: #1c212c;
+    --line: rgba(236,238,232,0.14); --line-strong: rgba(236,238,232,0.24);
+    --text: var(--ink); --text-muted: rgba(236,238,232,0.62); --text-faint: rgba(236,238,232,0.4);
+    --coral: #ff8a68; --coral-soft: rgba(255,138,104,0.14);
+    --teal: #55c2a8; --teal-soft: rgba(85,194,168,0.15);
+    --amber: #e3b45f; --amber-soft: rgba(227,180,95,0.16);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px -12px rgba(0,0,0,0.55);
+  }
+  :root[data-theme="light"] {
+    --ink: #1c2333; --paper: #eceee8; --surface: #ffffff;
+    --line: rgba(28,35,51,0.13); --line-strong: rgba(28,35,51,0.22);
+    --text: var(--ink); --text-muted: rgba(28,35,51,0.58); --text-faint: rgba(28,35,51,0.38);
+    --coral: #d9522f; --coral-soft: rgba(217,82,47,0.12);
+    --teal: #257a68; --teal-soft: rgba(37,122,104,0.13);
+    --amber: #b9812c; --amber-soft: rgba(185,129,44,0.15);
+    --shadow: 0 1px 2px rgba(28,35,51,0.06), 0 8px 24px -12px rgba(28,35,51,0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { max-width: 640px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  button { font-family: inherit; cursor: pointer; }
+  button:focus-visible, .deck:focus-visible, input:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+
+  /* ---------- home view ---------- */
+  header.home-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 26px; }
+  header.home-header h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.9rem, 5vw, 2.4rem);
+    margin: 6px 0 8px;
+    text-wrap: balance;
+    font-weight: 600;
+  }
+  header.home-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    max-width: 48ch;
+    line-height: 1.6;
+    margin: 0;
+  }
+  #install-btn {
+    flex-shrink: 0; background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
+    border-radius: 9px; padding: 8px 14px; font-size: 0.8rem; font-weight: 600; box-shadow: var(--shadow);
+  }
+
+  .deck-grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .deck {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    text-align: left;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .deck:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+  @media (prefers-reduced-motion: reduce) { .deck:hover { transform: none; } }
+
+  .deck-body { flex: 1; }
+  .deck-tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--teal);
+    background: var(--teal-soft);
+    padding: 2px 7px;
+    border-radius: 100px;
+  }
+  .deck h2 { font-family: var(--serif); font-size: 1.4rem; margin: 6px 0 2px; font-weight: 600; }
+  .deck .sub { font-size: 0.82rem; color: var(--text-muted); }
+
+  .deck-progress { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+  .ring { flex-shrink: 0; }
+  .deck-stats { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+  .deck-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .deck-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .start-btn {
+    background: var(--ink); color: var(--paper); border: none;
+    border-radius: 9px; padding: 8px 15px; font-size: 0.86rem; font-weight: 600;
+  }
+  .start-btn:disabled { opacity: 0.5; }
+  .reset-link {
+    background: none; border: none; color: var(--text-faint);
+    font-size: 0.74rem; text-decoration: underline; text-underline-offset: 2px; padding: 4px;
+  }
+  .reset-link:hover { color: var(--coral); }
+
+  .scope-note {
+    font-size: 0.78rem; color: var(--text-faint); margin-top: 18px; line-height: 1.6;
+    border-top: 1px dashed var(--line); padding-top: 14px;
+  }
+  .scope-note a { color: var(--text-muted); }
+
+  /* ---------- study view ---------- */
+  #study-view { display: none; }
+  #study-view.active { display: block; }
+  #home-view.hidden { display: none; }
+
+  .study-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .back-btn {
+    background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    width: 34px; height: 34px; border-radius: 9px; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .study-title { flex: 1; }
+  .study-title h2 { font-family: var(--serif); font-size: 1.15rem; margin: 0; }
+  .study-title .eyebrow { margin-top: 1px; }
+
+  .progress-track { height: 5px; background: var(--line); border-radius: 100px; overflow: hidden; margin-bottom: 22px; }
+  .progress-fill { height: 100%; background: var(--teal); border-radius: 100px; transition: width 0.3s ease; width: 0%; }
+  @media (prefers-reduced-motion: reduce) { .progress-fill { transition: none; } }
+
+  .quiz-card {
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: 18px;
+    box-shadow: var(--shadow); padding: 28px 24px; margin-bottom: 18px;
+  }
+  .quiz-top { display: flex; justify-content: center; align-items: center; margin-bottom: 18px; min-height: 20px; }
+  .word-pos {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--amber);
+    background: var(--amber-soft); padding: 2px 8px; border-radius: 100px;
+  }
+  .quiz-mean {
+    font-family: var(--serif); font-weight: 600; text-align: center;
+    font-size: clamp(1.6rem, 6vw, 2.1rem); text-wrap: balance; margin-bottom: 16px;
+  }
+  .speak-btn {
+    display: flex; align-items: center; gap: 7px; margin: 0 auto 24px; background: var(--teal-soft);
+    color: var(--teal); border: 1px solid transparent; border-radius: 100px; padding: 8px 16px; font-size: 0.85rem; font-weight: 600;
+  }
+  .speak-btn:active { transform: scale(0.97); }
+  .speak-btn svg { flex-shrink: 0; }
+
+  .blank-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 8px; }
+  .blank-group { display: flex; gap: 5px; }
+  .blank-box input {
+    width: 30px; height: 40px; text-align: center; font-family: var(--mono); font-size: 1.1rem;
+    font-weight: 600; text-transform: uppercase; border: 2px solid var(--line-strong); border-radius: 7px;
+    background: var(--paper); color: var(--text); padding: 0;
+  }
+  .blank-box input.correct { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); }
+  .blank-box input.wrong { border-color: var(--coral); background: var(--coral-soft); color: var(--coral); }
+  .blank-box input:disabled { opacity: 1; }
+
+  .feedback-panel { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line); text-align: center; }
+  .feedback-result { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+  .feedback-result.correct { color: var(--teal); }
+  .feedback-result.wrong { color: var(--coral); }
+  .feedback-phon { font-family: var(--mono); font-size: 0.9rem; color: var(--text-muted); }
+
+  .controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .ctrl-btn {
+    border-radius: 100px; padding: 11px 24px; font-size: 0.86rem; font-weight: 600; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text-muted);
+  }
+  .ctrl-btn.next { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .ctrl-btn:active { transform: scale(0.97); }
+
+  .study-hint { text-align: center; font-size: 0.76rem; color: var(--text-faint); }
+
+  .loading-row { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; color: var(--text-faint); font-size: 0.85rem; }
+
+  /* ---------- summary overlay ---------- */
+  #summary { display: none; position: fixed; inset: 0; background: rgba(20,23,30,0.55); align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  #summary.active { display: flex; }
+  .summary-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); max-width: 360px; width: 100%; padding: 28px 24px; text-align: center; box-shadow: var(--shadow); }
+  .summary-card h3 { font-family: var(--serif); font-size: 1.5rem; margin: 6px 0 4px; }
+  .summary-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0 0 20px; }
+  .summary-stats { display: flex; justify-content: center; gap: 22px; margin-bottom: 22px; }
+  .summary-stat b { display: block; font-family: var(--serif); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .summary-stat.know b { color: var(--teal); }
+  .summary-stat.review b { color: var(--coral); }
+  .summary-stat span { font-size: 0.72rem; color: var(--text-faint); }
+  .summary-actions { display: flex; gap: 10px; }
+  .summary-actions button { flex: 1; padding: 10px; border-radius: 9px; font-size: 0.86rem; font-weight: 600; border: 1px solid var(--line); }
+  .summary-actions .primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .summary-actions .secondary { background: transparent; color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="home-view">
+    <header class="home-header">
+      <div>
+        <div class="eyebrow">词卡 · Vocabulary Cards</div>
+        <h1>看中文，听发音，拼出单词</h1>
+        <p>三个难度分级共 8000 词，卡片只给中文释义并朗读英文发音，用键盘把英文单词逐格拼出来，拼对才算掌握。</p>
+      </div>
+      <button id="install-btn" hidden>安装到桌面</button>
+    </header>
+    <div class="deck-grid" id="deck-grid">
+      <div class="loading-row">词库加载中…</div>
+    </div>
+    <p class="scope-note">词库数据来自开源词典 <a href="https://github.com/skywind3000/ECDICT" target="_blank" rel="noopener">ECDICT</a>（MIT 协议），按中考/高考/四六级/雅思/托福/GRE/考研标签分级抽取，按词频排序。</p>
+  </div>
+
+  <div id="study-view">
+    <div class="study-header">
+      <button class="back-btn" id="back-btn" aria-label="返回">←</button>
+      <div class="study-title">
+        <div class="eyebrow" id="study-eyebrow">进度</div>
+        <h2 id="study-deck-name"></h2>
+      </div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div class="quiz-card">
+      <div class="quiz-top">
+        <span class="word-pos" id="quiz-pos"></span>
+      </div>
+      <div class="quiz-mean" id="quiz-mean"></div>
+      <button class="speak-btn" id="speak-btn" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9v6h4l5 5V4L8 9H4z"/>
+          <path d="M16.2 8.8a5 5 0 0 1 0 6.4"/>
+          <path d="M18.8 6.2a9 9 0 0 1 0 11.6"/>
+        </svg>
+        听发音
+      </button>
+      <div class="blank-row" id="blank-row"></div>
+      <div class="feedback-panel" id="feedback-panel" hidden>
+        <div class="feedback-result" id="feedback-result"></div>
+        <div class="feedback-phon" id="feedback-phon"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn skip" id="btn-skip">跳过 · 不会拼写</button>
+      <button class="ctrl-btn next" id="btn-next" hidden>下一词 →</button>
+    </div>
+    <div class="study-hint">输入字母自动跳到下一格 · 填满自动判定 · 反馈后按 Enter 或「下一词」继续</div>
+  </div>
+
+</div>
+
+<div id="summary">
+  <div class="summary-card">
+    <div class="eyebrow" id="summary-deck-name"></div>
+    <h3>本轮完成</h3>
+    <p>已保存到本地进度，下次打开会从未掌握的词继续。</p>
+    <div class="summary-stats">
+      <div class="summary-stat know"><b id="sum-know">0</b><span>本轮拼对</span></div>
+      <div class="summary-stat review"><b id="sum-review">0</b><span>待复习</span></div>
+    </div>
+    <div class="summary-actions">
+      <button class="secondary" id="summary-home">返回首页</button>
+      <button class="primary" id="summary-again">再来一轮</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DECKS = [
+    { id: "beginner", label: "初级", sub: "入门 · 2000 词", tag: "2000", file: "data/beginner.json", words: null },
+    { id: "intermediate", label: "中级", sub: "进阶 · 3000 词", tag: "3000", file: "data/intermediate.json", words: null },
+    { id: "advanced", label: "高级", sub: "精通 · 3000 词", tag: "3000", file: "data/advanced.json", words: null }
+  ];
+
+  var STORAGE_KEY = "vocabcards:progress:v3";
+  var progress = loadProgress();
+
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveProgress() { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+  function deckProgress(deckId) {
+    if (!progress[deckId]) progress[deckId] = {};
+    return progress[deckId];
+  }
+  function masteredCount(deck) {
+    var p = deckProgress(deck.id), n = 0;
+    deck.words.forEach(function (w) { if (p[w.w]) n++; });
+    return n;
+  }
+
+  var homeView = document.getElementById("home-view");
+  var studyView = document.getElementById("study-view");
+  var deckGrid = document.getElementById("deck-grid");
+  var summary = document.getElementById("summary");
+
+  function loadDecks() {
+    return Promise.all(DECKS.map(function (deck) {
+      return fetch(deck.file).then(function (r) { return r.json(); }).then(function (words) {
+        deck.words = words;
+      });
+    }));
+  }
+
+  function ringSVG(pct) {
+    var r = 16, c = 2 * Math.PI * r;
+    var offset = c - (pct / 100) * c;
+    return '<svg class="ring" width="40" height="40" viewBox="0 0 40 40">' +
+      '<circle cx="20" cy="20" r="' + r + '" fill="none" stroke="var(--line)" stroke-width="4"/>' +
+      '<circle cx="20" cy="20" r="' + r + '" fill="none" stroke="var(--teal)" stroke-width="4" ' +
+      'stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '" ' +
+      'stroke-linecap="round" transform="rotate(-90 20 20)"/></svg>';
+  }
+
+  function renderHome() {
+    deckGrid.innerHTML = "";
+    DECKS.forEach(function (deck) {
+      var m = masteredCount(deck), total = deck.words.length;
+      var pct = total ? Math.round((m / total) * 100) : 0;
+      var el = document.createElement("div");
+      el.className = "deck";
+      el.innerHTML =
+        '<div class="deck-body">' +
+          '<span class="deck-tag">' + deck.tag + ' 词</span>' +
+          '<h2>' + deck.label + '</h2>' +
+          '<div class="sub">' + deck.sub + '</div>' +
+        '</div>' +
+        '<div class="deck-progress">' +
+          ringSVG(pct) +
+          '<div class="deck-stats">已掌握 <b>' + m + '</b> / ' + total + '<br>本轮完成 ' + pct + '%</div>' +
+        '</div>' +
+        '<div class="deck-actions">' +
+          '<button class="reset-link" data-reset="' + deck.id + '">重置进度</button>' +
+          '<button class="start-btn" data-start="' + deck.id + '">开始拼写</button>' +
+        '</div>';
+      deckGrid.appendChild(el);
+    });
+  }
+
+  deckGrid.addEventListener("click", function (e) {
+    var startId = e.target.getAttribute("data-start");
+    var resetId = e.target.getAttribute("data-reset");
+    if (startId) startStudy(startId);
+    if (resetId) {
+      if (confirm("清除该级别的学习进度？")) {
+        progress[resetId] = {};
+        saveProgress();
+        renderHome();
+      }
+    }
+  });
+
+  /* ---------- speech ---------- */
+  var brightVoice = null;
+  var BRIGHT_VOICE_PREFS = [
+    /Google US English/i, /Samantha/i, /Zira/i, /Ava/i, /Allison/i,
+    /Serena/i, /Karen/i, /Moira/i, /Female/i
+  ];
+  function pickBrightVoice() {
+    if (!("speechSynthesis" in window)) return;
+    var voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return;
+    for (var i = 0; i < BRIGHT_VOICE_PREFS.length; i++) {
+      var match = voices.filter(function (v) { return /^en/i.test(v.lang); })
+        .find(function (v) { return BRIGHT_VOICE_PREFS[i].test(v.name); });
+      if (match) { brightVoice = match; return; }
+    }
+    brightVoice = voices.find(function (v) { return /^en-US/i.test(v.lang); }) ||
+      voices.find(function (v) { return /^en/i.test(v.lang); }) || null;
+  }
+  if ("speechSynthesis" in window) {
+    pickBrightVoice();
+    window.speechSynthesis.onvoiceschanged = pickBrightVoice;
+  }
+
+  function speak(text) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 0.92;
+    u.pitch = 1.18;
+    u.volume = 1;
+    if (brightVoice) u.voice = brightVoice;
+    window.speechSynthesis.speak(u);
+  }
+
+  /* ---------- study session ---------- */
+  var session = null;
+  var currentInputs = [];
+  var expectedChars = [];
+  var state = "answering"; // "answering" | "feedback"
+
+  var studyEyebrow = document.getElementById("study-eyebrow");
+  var studyDeckName = document.getElementById("study-deck-name");
+  var progressFill = document.getElementById("progress-fill");
+  var quizPos = document.getElementById("quiz-pos");
+  var quizMean = document.getElementById("quiz-mean");
+  var blankRow = document.getElementById("blank-row");
+  var feedbackPanel = document.getElementById("feedback-panel");
+  var feedbackResult = document.getElementById("feedback-result");
+  var feedbackPhon = document.getElementById("feedback-phon");
+  var btnSkip = document.getElementById("btn-skip");
+  var btnNext = document.getElementById("btn-next");
+  var speakBtn = document.getElementById("speak-btn");
+
+  function startStudy(deckId) {
+    var deck = DECKS.filter(function (d) { return d.id === deckId; })[0];
+    var queue = shuffle(deck.words.slice());
+    session = { deck: deck, queue: queue, total: queue.length, done: 0, knowCount: 0, reviewSet: {}, current: null };
+    homeView.classList.add("hidden");
+    studyView.classList.add("active");
+    studyDeckName.textContent = deck.label + " · " + deck.sub;
+    showCard();
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function showCard() {
+    if (!session.queue.length) { return endSession(); }
+    var w = session.queue[0];
+    session.current = w;
+    state = "answering";
+    quizPos.textContent = w.pos || "";
+    quizPos.style.visibility = w.pos ? "visible" : "hidden";
+    quizMean.textContent = w.mean;
+    feedbackPanel.hidden = true;
+    btnNext.hidden = true;
+    btnSkip.hidden = false;
+    renderBlanks(w.w);
+    var pct = session.total ? Math.round((session.done / session.total) * 100) : 0;
+    progressFill.style.width = pct + "%";
+    studyEyebrow.textContent = "第 " + (session.done + 1) + " / " + session.total + " 个 · 本轮拼对 " + session.knowCount;
+    speak(w.w);
+  }
+
+  function renderBlanks(word) {
+    blankRow.innerHTML = "";
+    currentInputs = [];
+    expectedChars = [];
+    var groups = word.split(" ");
+    groups.forEach(function (g) {
+      var group = document.createElement("div");
+      group.className = "blank-group";
+      for (var i = 0; i < g.length; i++) {
+        var wrap = document.createElement("span");
+        wrap.className = "blank-box";
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.maxLength = 1;
+        inp.setAttribute("autocomplete", "off");
+        inp.setAttribute("autocapitalize", "off");
+        inp.setAttribute("spellcheck", "false");
+        inp.setAttribute("inputmode", "text");
+        inp.setAttribute("aria-label", "第 " + (expectedChars.length + 1) + " 个字母");
+        wrap.appendChild(inp);
+        group.appendChild(wrap);
+        currentInputs.push(inp);
+        expectedChars.push(g[i].toLowerCase());
+      }
+      blankRow.appendChild(group);
+    });
+    currentInputs.forEach(function (inp, idx) { attachBoxHandlers(inp, idx); });
+    if (currentInputs.length) currentInputs[0].focus();
+  }
+
+  function attachBoxHandlers(inp, idx) {
+    inp.addEventListener("input", function (e) {
+      var v = e.target.value;
+      if (!v) return;
+      e.target.value = v.slice(-1).toUpperCase();
+      if (idx < currentInputs.length - 1) {
+        currentInputs[idx + 1].focus();
+      } else {
+        checkAnswer();
+      }
+    });
+    inp.addEventListener("keydown", function (e) {
+      if (state === "feedback") {
+        if (e.key === "Enter") nextCard();
+        return;
+      }
+      if (e.key === "Backspace" && !e.target.value && idx > 0) {
+        currentInputs[idx - 1].focus();
+        currentInputs[idx - 1].value = "";
+      }
+      if (e.key === "Enter") checkAnswer();
+    });
+  }
+
+  function checkAnswer() {
+    if (state !== "answering") return;
+    state = "feedback";
+    var typed = currentInputs.map(function (i) { return i.value.toLowerCase(); });
+    var allCorrect = typed.length > 0 && typed.every(function (c, i) { return c && c === expectedChars[i]; });
+    currentInputs.forEach(function (inp, i) {
+      inp.disabled = true;
+      if (typed[i] && typed[i] === expectedChars[i]) {
+        inp.classList.add("correct");
+      } else {
+        inp.classList.add("wrong");
+        inp.value = expectedChars[i].toUpperCase();
+      }
+    });
+    showFeedback(allCorrect);
+    recordResult(allCorrect);
+  }
+
+  function showFeedback(correct) {
+    var w = session.current;
+    feedbackResult.textContent = correct ? "拼写正确" : "拼写有误，正确答案已标出";
+    feedbackResult.className = "feedback-result " + (correct ? "correct" : "wrong");
+    feedbackPhon.textContent = w.phon || "";
+    feedbackPhon.style.display = w.phon ? "block" : "none";
+    feedbackPanel.hidden = false;
+    btnSkip.hidden = true;
+    btnNext.hidden = false;
+    btnNext.focus();
+  }
+
+  function recordResult(correct) {
+    var w = session.queue.shift();
+    var p = deckProgress(session.deck.id);
+    p[w.w] = correct;
+    saveProgress();
+    if (correct) {
+      session.knowCount++;
+      session.done++;
+    } else if (!session.reviewSet[w.w]) {
+      session.reviewSet[w.w] = true;
+      session.queue.push(w);
+    } else {
+      session.done++;
+    }
+  }
+
+  function nextCard() { showCard(); }
+
+  function endSession() {
+    var p = deckProgress(session.deck.id);
+    var review = 0;
+    session.deck.words.forEach(function (w) { if (!p[w.w]) review++; });
+    document.getElementById("summary-deck-name").textContent = session.deck.label + " · " + session.deck.sub;
+    document.getElementById("sum-know").textContent = session.knowCount;
+    document.getElementById("sum-review").textContent = review;
+    summary.classList.add("active");
+  }
+
+  btnSkip.addEventListener("click", function () {
+    if (state === "answering") checkAnswer();
+  });
+  btnNext.addEventListener("click", function () {
+    if (state === "feedback") nextCard();
+  });
+  speakBtn.addEventListener("click", function () {
+    if (session && session.current) speak(session.current.w);
+  });
+
+  document.getElementById("summary-home").addEventListener("click", function () {
+    summary.classList.remove("active");
+    studyView.classList.remove("active");
+    homeView.classList.remove("hidden");
+    renderHome();
+  });
+  document.getElementById("summary-again").addEventListener("click", function () {
+    summary.classList.remove("active");
+    startStudy(session.deck.id);
+  });
+  document.getElementById("back-btn").addEventListener("click", function () {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    studyView.classList.remove("active");
+    homeView.classList.remove("hidden");
+    renderHome();
+  });
+
+  /* ---------- install prompt ---------- */
+  var installBtn = document.getElementById("install-btn");
+  var deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener("click", function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function () {
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+  });
+  window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
+
+  /* ---------- service worker ---------- */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+
+  /* ---------- boot ---------- */
+  loadDecks().then(renderHome).catch(function (err) {
+    deckGrid.innerHTML = '<div class="loading-row">词库加载失败，请检查网络后刷新重试。</div>';
+    console.error(err);
+  });
+})();
+</script>
+</body>
+</html>
