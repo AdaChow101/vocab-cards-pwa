@@ -1,4 +1,4 @@
-const CACHE_NAME = "cika-vocab-v1";
+const CACHE_NAME = "cika-vocab-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -10,6 +10,9 @@ const APP_SHELL = [
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png"
 ];
+
+// network-first: app shell + data change over time and must not get stuck stale
+const NETWORK_FIRST = /(\/|index\.html|manifest\.json|data\/.*\.json)$/;
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
@@ -36,6 +39,27 @@ self.addEventListener("activate", function (event) {
 
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
+  var url = new URL(event.request.url);
+  var isNavigation = event.request.mode === "navigate";
+  var useNetworkFirst = isNavigation || NETWORK_FIRST.test(url.pathname);
+
+  if (useNetworkFirst) {
+    event.respondWith(
+      fetch(event.request).then(function (response) {
+        if (response.ok) {
+          var copy = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
+        }
+        return response;
+      }).catch(function () {
+        return caches.match(event.request).then(function (cached) {
+          return cached || (isNavigation ? caches.match("./index.html") : undefined);
+        });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(function (cached) {
       if (cached) return cached;
@@ -45,8 +69,6 @@ self.addEventListener("fetch", function (event) {
           caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
         }
         return response;
-      }).catch(function () {
-        if (event.request.mode === "navigate") return caches.match("./index.html");
       });
     })
   );
