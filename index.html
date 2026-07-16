@@ -202,6 +202,12 @@
   .speak-btn:active { transform: scale(0.97); }
   .speak-btn svg { flex-shrink: 0; }
 
+  .voice-warning {
+    max-width: 44ch; margin: -14px auto 20px; text-align: center; font-size: 0.76rem;
+    line-height: 1.6; color: var(--coral); background: var(--coral-soft);
+    border-radius: 10px; padding: 8px 12px;
+  }
+
   .blank-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 8px; }
   .blank-group { display: flex; gap: 5px; }
   .blank-box input {
@@ -290,6 +296,7 @@
         </svg>
         听发音
       </button>
+      <p class="voice-warning" id="voice-warning" hidden></p>
       <div class="blank-row" id="blank-row"></div>
       <div class="feedback-panel" id="feedback-panel" hidden>
         <div class="feedback-result" id="feedback-result"></div>
@@ -413,6 +420,8 @@
 
   /* ---------- speech ---------- */
   var brightVoice = null;
+  var lastUtterance = null; // keep a live reference so Android Chrome doesn't GC it mid-speak
+  var voiceWarningEl = document.getElementById("voice-warning");
   var BRIGHT_VOICE_PREFS = [
     /Google US English/i, /Samantha/i, /Zira/i, /Ava/i, /Allison/i,
     /Serena/i, /Karen/i, /Moira/i, /Female/i
@@ -429,9 +438,30 @@
     brightVoice = voices.find(function (v) { return /^en-US/i.test(v.lang); }) ||
       voices.find(function (v) { return /^en/i.test(v.lang); }) || null;
   }
+  function checkVoiceAvailability() {
+    if (!voiceWarningEl) return;
+    if (!("speechSynthesis" in window)) {
+      voiceWarningEl.hidden = false;
+      voiceWarningEl.textContent = "此浏览器不支持语音朗读，听不到发音，但仍可正常拼写。";
+      return;
+    }
+    var voices = window.speechSynthesis.getVoices();
+    var hasEnglish = voices.some(function (v) { return /^en/i.test(v.lang); });
+    voiceWarningEl.hidden = hasEnglish;
+    voiceWarningEl.textContent = "此设备未检测到可用的语音引擎，听不到发音。请到系统设置的“语言与输入法 → 文字转语音”中安装并启用一个引擎（如 Google 文字转语音），再刷新本页。";
+  }
   if ("speechSynthesis" in window) {
     pickBrightVoice();
-    window.speechSynthesis.onvoiceschanged = pickBrightVoice;
+    checkVoiceAvailability();
+    window.speechSynthesis.onvoiceschanged = function () {
+      pickBrightVoice();
+      checkVoiceAvailability();
+    };
+    // some Android WebViews never fire onvoiceschanged; re-check after voices had time to load
+    setTimeout(checkVoiceAvailability, 1200);
+    setTimeout(checkVoiceAvailability, 3000);
+  } else {
+    checkVoiceAvailability();
   }
 
   function speak(text) {
@@ -443,6 +473,8 @@
     u.pitch = 1.18;
     u.volume = 1;
     if (brightVoice) u.voice = brightVoice;
+    u.onerror = function () { checkVoiceAvailability(); };
+    lastUtterance = u;
     window.speechSynthesis.speak(u);
   }
 
